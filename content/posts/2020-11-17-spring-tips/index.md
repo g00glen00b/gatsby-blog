@@ -38,7 +38,7 @@ public CoffeeApplication(OrderService orderService, CoffeeService coffeeService)
 
 If you only have one constructor, you can even remove the @Autowired` annotation and have a plain, simple constructor.
 
-Why? First of all, it allows you to use final fields, and thus, make your class immutable. `
+**Why?** First of all, it allows you to use final fields, and thus, make your class immutable. `
 Another advantage is that it's easier to detect missing mocks in unit tests. 
 If you're trying to inject mocks into a field-injected service, you'll have to rely on reflection. 
 With constructors on the other hand, you can use a simple setup method:
@@ -52,6 +52,29 @@ void init() {
 }
 ```
 
+### Tip 2: Use configuration properties over values
 
+If you want to use an application property or environment variable within your application, you could use the `@Value` annotation:
 
+```java
+@Value("${db.host}")
+private String databaseHost;
+```
+
+However, you can also use configuration properties:
+
+```java
+@ConfigurationProperties(prefix = "host")
+public class DatabaseProperties {
+  private String databaseHost;
+}
+```
+
+**Why?** This approach allows you to group properties together, but it also uses a better way of binding. 
+For example, if you have a duration-based properties, you could do this:
+
+```java
+@DurationUnit(ChronoUnit.SECONDS)
+private Duration timeout;
+```
 
