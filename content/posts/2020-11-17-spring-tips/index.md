@@ -1,7 +1,7 @@
 ---
 title: "25+ Spring tips"
 date: "2020-11-17"
-featuredImage: "../../images/logos/spring.png"
+featuredImage: "../../images/logos/spring-boot.png"
 categories: ["Java", "Tutorials"]
 tags: ["Spring boot", "Spring", "Spring Data", "Spring MVC"]
 excerpt: "In this tutorial, I'll cover 25+ tips to follow when developing Spring applications."
@@ -98,3 +98,69 @@ public Order getOrder(long orderId, LocalDate date) {
 
 In this example, the order **won't** be cached when you call the `getOrder(1L)` method. 
 The solution to this problem depends on the use case, but often it can be solved by applying the same annotation to the other method as well.
+
+### Tip 4: You may not need an interface
+
+When we create a service with Spring, I often see people creating an interface (eg. `OrderService`), and an implementation (eg. `OrderServiceImpl`). 
+This is not required by the Spring framework. You could write your code like this:
+
+```java
+@Service
+public class OrderService { // No implements
+}
+```
+
+Some may argue that using interfaces is a good way to apply **Inversion of Control**. 
+Yes, I agree with them. However, you have to ask yourself whether it's useful in your case to invert the control between the web and service layer in your application.
+I would rather apply inversion of control to services that should be triggered from another domain. 
+
+For example, let's say you have a `CustomerService`, and when the customer deletes their account, you want all orders to be deleted as well. You could do something like this:
+
+```java
+@Service
+public class CustomerService {
+    private final OrderService orderService; // Autowired
+    
+    public void delete(long customerId) {
+        // TODO: Delete customer
+        orderService.deleteAllByCustomerId(customerId);
+    }
+}
+```
+However, now you tied two domains (orders and customers) together.
+This is where inversion of control is useful to me. 
+Rather than coupling these domains, you can create a new interface within the customer-domain: 
+
+```java
+public interface CustomerDeletedListener {
+    void onDelete(long customerId);
+}
+```
+
+You can implement these within the order-domain:
+
+```java
+public class OrderCustomerDeletionListener implements CustomerDeletedListener {
+   public void onDelete(long customerId) {
+       orderService.deleteAllByCustomerId(customerId);
+   }
+}
+```
+
+And then you can autowire them in your `CustomerService`:
+
+```java
+@Service
+public CustomerService {
+    private List<CustomerDeletedListener> deletionListeners;
+  
+    public void delete(long customerId) {
+        // TODO: Delete customer
+        deletionListeners.forEach(listener -> listener.onDelete(customerId));
+    }
+}
+```
+
+And there you have it, now the customer and order domains are loosely coupled again.
+
+
