@@ -78,3 +78,23 @@ For example, if you have a duration-based properties, you could do this:
 private Duration timeout;
 ```
 
+### Tip 3: Don't forget the proxy
+
+Be aware that Spring uses a proxy class when instantiating beans. 
+This means that if you annotated certain methods (eg. `@Cacheable`, `@Transactional`, `@PreAuthorize`, ...), these will **only** be applied when you call that method from the proxy.
+
+If you call the method from within another method, these annotations won't work.
+
+```java
+public Order getOrder(long orderId) {
+    return getOrder(orderId, LocalDate.now());
+}
+
+@Cacheable
+public Order getOrder(long orderId, LocalDate date) {
+  
+}
+```
+
+In this example, the order **won't** be cached when you call the `getOrder(1L)` method. 
+The solution to this problem depends on the use case, but often it can be solved by applying the same annotation to the other method as well.
